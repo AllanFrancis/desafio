@@ -11,11 +11,6 @@ router.post(
   TaskController.jsonParser.bind(TaskController),
   TaskController.create.bind(TaskController)
 );
-router.post(
-  "/import/csv",
-  TaskController.multipartParser.bind(TaskController),
-  TaskController.importCSV.bind(TaskController)
-);
 
 router.put(
   "/:id",
@@ -25,7 +20,7 @@ router.put(
 
 router.patch(
   "/:id/complete",
-  TaskController.markAsCompleted.bind(TaskController)
+  TaskController.toggleComplete.bind(TaskController)
 );
 
 router.delete("/:id", TaskController.delete.bind(TaskController));

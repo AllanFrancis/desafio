@@ -1,15 +1,6 @@
 import Task from "../models/Task.js";
 import TaskRepository from "../models/TaskRepository.js";
-import { parse } from "csv-parse/sync";
-import {
-  parseJSON,
-  parseMultipart,
-  getQueryParams,
-  sendJSON,
-} from "../utils/httpUtils.js";
-import fs from "node:fs/promises";
-import path from "node:path";
-import os from "node:os";
+import { parseJSON, getQueryParams, sendJSON } from "../utils/httpUtils.js";
 
 class TaskController {
   jsonParser(req, res, next) {
@@ -28,25 +19,6 @@ class TaskController {
       });
     } else {
       req.body = {};
-      next();
-    }
-  }
-
-  multipartParser(req, res, next) {
-    const contentType = req.headers["content-type"] || "";
-    if (contentType.includes("multipart/form-data")) {
-      parseMultipart(req, (err, result) => {
-        if (err) {
-          sendJSON(res, 400, {
-            success: false,
-            message: "Erro ao processar arquivo: " + err.message,
-          });
-          return;
-        }
-        req.file = result.file;
-        next();
-      });
-    } else {
       next();
     }
   }
@@ -195,7 +167,7 @@ class TaskController {
     }
   }
 
-  async markAsCompleted(req, res) {
+  async toggleComplete(req, res) {
     try {
       const { id } = req.params;
 
@@ -208,108 +180,20 @@ class TaskController {
         return;
       }
 
-      const updatedTask = await TaskRepository.markAsCompleted(id);
+      const updatedTask = await TaskRepository.toggleComplete(id);
+      const isComplete = updatedTask.completed_at !== null;
 
       sendJSON(res, 200, {
         success: true,
-        message: "Tarefa marcada como concluída",
+        message: isComplete
+          ? "Tarefa marcada como concluída"
+          : "Tarefa marcada como não concluída",
         data: updatedTask,
       });
     } catch (error) {
       sendJSON(res, 500, {
         success: false,
-        message: "Erro ao marcar tarefa como concluída",
-        error: error.message,
-      });
-    }
-  }
-
-  async importCSV(req, res) {
-    try {
-      if (!req.file) {
-        sendJSON(res, 400, {
-          success: false,
-          message: "Nenhum arquivo CSV foi enviado",
-        });
-        return;
-      }
-
-      if (!req.file.originalname.endsWith(".csv")) {
-        sendJSON(res, 400, {
-          success: false,
-          message: "Apenas arquivos CSV são permitidos",
-        });
-        return;
-      }
-
-      const tempPath = path.join(os.tmpdir(), `csv-${Date.now()}.csv`);
-      await fs.writeFile(tempPath, req.file.buffer);
-
-      const fileContent = await fs.readFile(tempPath, "utf-8");
-
-      const records = parse(fileContent, {
-        columns: true,
-        skip_empty_lines: true,
-        trim: true,
-      });
-
-      const errors = [];
-      const tasks = [];
-
-      for (let i = 0; i < records.length; i++) {
-        const record = records[i];
-        const rowNumber = i + 2;
-
-        if (!record.title || !record.description) {
-          errors.push({
-            row: rowNumber,
-            message: "Campos title e description são obrigatórios",
-          });
-          continue;
-        }
-
-        const validationErrors = Task.validate({
-          title: record.title,
-          description: record.description,
-        });
-
-        if (validationErrors.length > 0) {
-          errors.push({
-            row: rowNumber,
-            message: validationErrors.join(", "),
-          });
-          continue;
-        }
-
-        const task = new Task({
-          title: record.title,
-          description: record.description,
-        });
-
-        tasks.push(task);
-      }
-
-      await fs.unlink(tempPath);
-
-      if (tasks.length > 0) {
-        await TaskRepository.createMany(tasks);
-      }
-
-      const response = {
-        success: true,
-        message: "Importação concluída",
-        imported: tasks.length,
-      };
-
-      if (errors.length > 0) {
-        response.errors = errors;
-      }
-
-      sendJSON(res, 200, response);
-    } catch (error) {
-      sendJSON(res, 500, {
-        success: false,
-        message: "Erro ao importar CSV",
+        message: "Erro ao alterar status da tarefa",
         error: error.message,
       });
     }

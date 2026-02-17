@@ -17,8 +17,8 @@ mainRouter.get("/", (req, res) => {
         update: "PUT /tasks/:id",
         delete: "DELETE /tasks/:id",
         complete: "PATCH /tasks/:id/complete",
-        importCSV: "POST /tasks/import/csv",
       },
+      import: "node src/import-csv.js <arquivo.csv>",
     },
   });
 });

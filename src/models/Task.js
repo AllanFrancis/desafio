@@ -5,9 +5,9 @@ class Task {
     this.id = randomUUID();
     this.title = title;
     this.description = description;
-    this.completed = false;
-    this.createdAt = new Date().toISOString();
-    this.updatedAt = new Date().toISOString();
+    this.completed_at = null;
+    this.created_at = new Date().toISOString();
+    this.updated_at = new Date().toISOString();
   }
 
   static validate(taskData) {

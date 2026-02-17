@@ -58,7 +58,7 @@ class TaskRepository {
     tasks[index] = {
       ...tasks[index],
       ...updates,
-      updatedAt: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     };
 
     await this.writeData(tasks);
@@ -98,14 +98,21 @@ class TaskRepository {
     if (filters.completed !== undefined) {
       const isCompleted =
         filters.completed === "true" || filters.completed === true;
-      tasks = tasks.filter((task) => task.completed === isCompleted);
+      tasks = tasks.filter((task) =>
+        isCompleted ? task.completed_at !== null : task.completed_at === null
+      );
     }
 
     return tasks;
   }
 
-  async markAsCompleted(id) {
-    return await this.update(id, { completed: true });
+  async toggleComplete(id) {
+    const task = await this.getById(id);
+    if (!task) return null;
+
+    const completed_at =
+      task.completed_at === null ? new Date().toISOString() : null;
+    return await this.update(id, { completed_at });
   }
 
   async createMany(tasks) {
